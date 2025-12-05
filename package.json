@@ -1,0 +1,36 @@
+{
+  "name": "msfmcp-ollama-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Process supervisor that starts msfrpcd, the Metasploit MCP server, and an optional ollmcp client for Ollama.",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "bridge": "tsx src/index.ts",
+    "gui": "tsx src/gui.ts",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "metasploit",
+    "mcp",
+    "ollama",
+    "automation"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "execa": "^9.2.0",
+    "express": "^4.22.1",
+    "tree-kill": "^1.2.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.25",
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

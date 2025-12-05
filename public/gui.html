@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Metasploit MCP Bridge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow-y: auto;
+      }
+      main {
+        width: min(1100px, 95vw);
+        background: #1f2937;
+        border-radius: 16px;
+        padding: 24px 28px 32px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      p.subtitle {
+        margin: 0 0 16px;
+        color: #94a3b8;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: #3b82f6;
+        color: #f8fafc;
+        transition: transform 120ms ease, background 120ms ease;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      button.secondary {
+        background: #475569;
+      }
+      button:active {
+        transform: scale(0.96);
+      }
+      section#services {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .card {
+        background: #111827;
+        border-radius: 14px;
+        padding: 20px;
+        border: 1px solid #1f2937;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 420px;
+      }
+      .card h2 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+      .description {
+        color: #94a3b8;
+        margin: 0;
+      }
+      .state {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+      }
+      .state.running { color: #4ade80; }
+      .state.starting { color: #facc15; }
+      .state.stopped { color: #f472b6; }
+      .meta {
+        font-size: 0.85rem;
+        color: #cbd5f5;
+      }
+      pre.logs {
+        background: #0b1120;
+        border-radius: 10px;
+        padding: 14px;
+        flex: 0 0 240px;
+        height: 240px;
+        overflow-y: auto;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        box-sizing: border-box;
+      }
+      .card-footer {
+        margin-top: auto;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      section#config-files {
+        margin: 24px 0 32px;
+        background: #0b1120;
+        border-radius: 14px;
+        padding: 18px;
+        border: 1px solid #1f2937;
+      }
+      section#config-files h2 {
+        margin: 0 0 6px;
+        font-size: 1.12rem;
+        font-weight: 600;
+      }
+      section#config-files p {
+        margin: 0 0 16px;
+        color: #94a3b8;
+      }
+      .config-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .config-controls button.active {
+        background: #0ea5e9;
+      }
+      #config-output {
+        background: #020617;
+        border-radius: 10px;
+        padding: 14px;
+        height: 220px;
+        width: 100%;
+        border: 1px solid #1f2937;
+        color: #f8fafc;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.85rem;
+        line-height: 1.45;
+        resize: none;
+        overflow-y: auto;
+        box-sizing: border-box;
+      }
+      .config-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .config-status {
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Metasploit MCP Bridge</h1>
+      <p class="subtitle">Launch msfrpcd, the Metasploit MCP server, and the optional ollmcp client.</p>
+      <div class="actions">
+        <button id="start-all">Start All</button>
+        <button id="stop-all" class="secondary">Stop All</button>
+        <button id="refresh" class="secondary">Refresh</button>
+        <button id="ollmcp-nav" class="secondary" disabled title="Start msfrpcd and Metasploit MCP to enable">Open ollmcp dashboard</button>
+      </div>
+      <section id="config-files">
+        <h2>Configuration Files</h2>
+        <p>Quickly inspect the active bridge configuration and .env overrides.</p>
+        <div class="config-controls">
+          <button data-file="bridge">config/bridge.config.json</button>
+          <button data-file="env" class="secondary">.env</button>
+        </div>
+        <textarea id="config-output" spellcheck="false">Select a file to view its contents.</textarea>
+        <div class="config-footer">
+          <span class="config-status" id="config-status">Nothing loaded yet.</span>
+          <button id="config-save" class="secondary" disabled>Save Changes</button>
+        </div>
+      </section>
+      <section id="services"></section>
+    </main>
+    <script>
+      const servicesContainer = document.getElementById('services');
+      const buttons = {
+        startAll: document.getElementById('start-all'),
+        stopAll: document.getElementById('stop-all'),
+        refresh: document.getElementById('refresh'),
+        ollmcp: document.getElementById('ollmcp-nav'),
+      };
+      const configOutput = document.getElementById('config-output');
+      const configControls = document.querySelector('.config-controls');
+      const configStatus = document.getElementById('config-status');
+      const configSave = document.getElementById('config-save');
+      const configFiles = {
+        bridge: { path: '/api/files/bridge-config', savePath: '/api/files/bridge-config', label: 'config/bridge.config.json' },
+        env: { path: '/api/files/env', savePath: '/api/files/env', label: '.env' },
+      };
+      let activeConfig = null;
+      const logScrollPositions = new Map();
+
+      async function request(path, options = {}) {
+        const res = await fetch(path, { method: 'GET', ...options });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error ?? res.statusText);
+        }
+        return res.json();
+      }
+
+      async function requestText(path) {
+        const res = await fetch(path, { method: 'GET' });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error ?? res.statusText);
+        }
+        return res.text();
+      }
+
+      const isOllmcpReady = (services) => {
+        const msfrpcd = services.find((svc) => svc.id === 'msfrpcd');
+        const metasploit = services.find((svc) => svc.id === 'metasploit-mcp');
+        return Boolean(msfrpcd && metasploit && msfrpcd.info.state === 'running' && metasploit.info.state === 'running');
+      };
+
+      function renderStatus(data) {
+        servicesContainer.innerHTML = '';
+        data.services
+          .filter((svc) => svc.id !== 'ollmcp')
+          .forEach((svc) => {
+          const card = document.createElement('article');
+          card.className = 'card';
+
+          const title = document.createElement('h2');
+          title.textContent = svc.label;
+          const desc = document.createElement('p');
+          desc.className = 'description';
+          desc.textContent = svc.description;
+          const state = document.createElement('span');
+          state.className = `state ${svc.info.state}`;
+          state.textContent = svc.info.state;
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          meta.textContent = `PID: ${svc.info.pid ?? '—'} | Auto-start: ${svc.autoStart ? 'yes' : 'no'}`;
+
+          const exitMeta = document.createElement('div');
+          exitMeta.className = 'meta';
+          exitMeta.textContent = `Last exit: ${svc.info.lastExit ? JSON.stringify(svc.info.lastExit) : 'n/a'}`;
+
+          const logs = document.createElement('pre');
+          logs.className = 'logs';
+          const trimmedLogs = svc.info.logs.slice(-6).join('\n');
+          logs.textContent = trimmedLogs || 'No output yet.';
+          logs.addEventListener('scroll', () => {
+            logScrollPositions.set(svc.id, {
+              left: logs.scrollLeft,
+              top: logs.scrollTop,
+            });
+          });
+          if (logScrollPositions.has(svc.id)) {
+            const { left, top } = logScrollPositions.get(svc.id);
+            requestAnimationFrame(() => {
+              logs.scrollLeft = left;
+              logs.scrollTop = top;
+            });
+          }
+
+          const footer = document.createElement('div');
+          footer.className = 'card-footer';
+          const startBtn = document.createElement('button');
+          startBtn.dataset.action = 'start';
+          startBtn.dataset.id = svc.id;
+          startBtn.textContent = 'Start';
+          startBtn.disabled = svc.info.state === 'running' || svc.info.state === 'starting';
+          const stopBtn = document.createElement('button');
+          stopBtn.dataset.action = 'stop';
+          stopBtn.dataset.id = svc.id;
+          stopBtn.className = 'secondary';
+          stopBtn.textContent = 'Stop';
+          stopBtn.disabled = svc.info.state === 'stopped' || svc.info.state === 'stopping';
+          const clearBtn = document.createElement('button');
+          clearBtn.dataset.action = 'clear-logs';
+          clearBtn.dataset.id = svc.id;
+          clearBtn.className = 'secondary';
+          clearBtn.textContent = 'Clear Output';
+          footer.append(startBtn, stopBtn, clearBtn);
+
+          card.append(title, desc, state, meta, exitMeta, logs, footer);
+          servicesContainer.appendChild(card);
+        });
+      }
+
+      function updateOllmcpButton(ready) {
+        const button = buttons.ollmcp;
+        if (!button) return;
+        button.disabled = !ready;
+        button.title = ready ? 'Open dedicated ollmcp dashboard' : 'Start msfrpcd and Metasploit MCP first';
+      }
+
+      async function refreshStatus() {
+        try {
+          const data = await request('/api/status');
+          const ready = isOllmcpReady(data.services);
+          renderStatus(data);
+          updateOllmcpButton(ready);
+        } catch (error) {
+          console.error(error);
+          alert(`Failed to load status: ${error.message}`);
+        }
+      }
+
+      servicesContainer.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const action = target.dataset.action;
+        const id = target.dataset.id;
+        if (!action || !id) return;
+        try {
+          await request(`/api/service/${id}/${action}`, { method: 'POST' });
+          if (action === 'clear-logs') {
+            logScrollPositions.delete(id);
+          }
+          await refreshStatus();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      buttons.startAll.addEventListener('click', async () => {
+        try {
+          await request('/api/start-all', { method: 'POST' });
+          await refreshStatus();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      buttons.stopAll.addEventListener('click', async () => {
+        try {
+          await request('/api/stop-all', { method: 'POST' });
+          await refreshStatus();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      buttons.refresh.addEventListener('click', refreshStatus);
+
+      if (buttons.ollmcp) {
+        buttons.ollmcp.addEventListener('click', () => {
+          if (buttons.ollmcp.disabled) return;
+          window.location.href = '/ollmcp.html';
+        });
+      }
+
+      if (configControls) {
+        configControls.addEventListener('click', async (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLButtonElement) || !target.dataset.file) return;
+          const fileKey = target.dataset.file;
+          const fileMeta = configFiles[fileKey];
+          if (!fileMeta) return;
+          configOutput.value = `Loading ${fileMeta.label}...`;
+          configControls.querySelectorAll('button').forEach((btn) => btn.classList.toggle('active', btn === target));
+          try {
+            const content = await requestText(fileMeta.path);
+            activeConfig = fileMeta;
+            configOutput.value = content || '';
+            configStatus.textContent = `Loaded ${fileMeta.label}`;
+            configSave.disabled = false;
+          } catch (error) {
+            configOutput.value = `Failed to load ${fileMeta.label}: ${error.message}`;
+            configStatus.textContent = `Failed to load ${fileMeta.label}`;
+            configSave.disabled = true;
+          }
+        });
+      }
+
+      if (configSave) {
+        configSave.addEventListener('click', async () => {
+          if (!activeConfig) {
+            configStatus.textContent = 'Select a file before saving.';
+            return;
+          }
+          configSave.disabled = true;
+          configStatus.textContent = `Saving ${activeConfig.label}...`;
+          try {
+            const response = await fetch(activeConfig.savePath, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: configOutput.value ?? '' }),
+            });
+            if (!response.ok) {
+              const payload = await response.json().catch(() => ({}));
+              throw new Error(payload.error ?? response.statusText);
+            }
+            configStatus.textContent = `Saved ${activeConfig.label}`;
+          } catch (error) {
+            configStatus.textContent = `Failed to save: ${error.message}`;
+          } finally {
+            configSave.disabled = false;
+          }
+        });
+      }
+
+      setInterval(refreshStatus, 4000);
+      refreshStatus();
+    </script>
+  </body>
+</html>

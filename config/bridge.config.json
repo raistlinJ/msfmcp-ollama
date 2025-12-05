@@ -1,0 +1,27 @@
+{
+  "msfUser": "msf",
+  "msfPassword": "changeme",
+  "msfHost": "127.0.0.1",
+  "msfPort": 55553,
+  "msfRpcSsl": false,
+  "msfrpcdPath": "msfrpcd",
+  "metasploitMcpPath": "./MetasploitMCP",
+  "metasploitMcpPython": "python3",
+  "metasploitMcpExtraArgs": [],
+  "metasploitMcpHost": "127.0.0.1",
+  "metasploitMcpPort": 8085,
+  "metasploitMcpTransport": "http",
+  "payloadSaveDir": "~/payloads",
+  "ollmcpCommand": "ollmcp",
+  "ollamaApiUrl": "http://127.0.0.1:11434",
+  "ollmcpModel": "gpt-oss:20b",
+  "extraOllmcpArgs": [],
+  "ollamaServeCommand": "ollama",
+  "ollamaServeArgs": [
+    "serve"
+  ],
+  "autoStartMsfrpcd": true,
+  "autoStartMetasploitMcp": true,
+  "autoStartOllmcp": false,
+  "autoStartOllama": false
+}

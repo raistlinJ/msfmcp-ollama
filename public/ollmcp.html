@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ollmcp Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #020617;
+        color: #e2e8f0;
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+      }
+      main {
+        width: min(960px, 100%);
+        margin: 32px auto;
+        padding: 32px;
+        background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), #020617 60%);
+        border: 1px solid #1f2937;
+        border-radius: 28px;
+        box-shadow: 0 25px 60px rgba(2, 6, 23, 0.7);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        letter-spacing: 0.04em;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 20px;
+        background: #2563eb;
+        color: #f8fafc;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+      button.secondary {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid #334155;
+        color: #e2e8f0;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      button:not(:disabled):hover {
+        transform: translateY(-1px);
+        background: #1d4ed8;
+      }
+      .terminal-panel {
+        margin-top: 16px;
+        background: #0b1120;
+        border: 1px solid #1f2937;
+        border-radius: 16px;
+        padding: 20px;
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .terminal-panel.visible {
+        display: flex;
+      }
+      .terminal-panel h2 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+      .terminal-panel pre {
+        margin: 0;
+        background: #020617;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        overflow-x: auto;
+        font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      }
+      .terminal-panel__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .terminal-panel__actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      .copy-feedback {
+        font-size: 0.85rem;
+        color: #34d399;
+        margin: 0;
+        min-height: 1em;
+      }
+      .copy-feedback.error {
+        color: #f87171;
+      }
+      #dependency-warning {
+        border-radius: 12px;
+        padding: 12px 16px;
+        background: rgba(251, 191, 36, 0.12);
+        border: 1px solid rgba(251, 191, 36, 0.4);
+        color: #fde68a;
+        margin-bottom: 18px;
+        display: none;
+      }
+      #dependency-warning.visible {
+        display: block;
+      }
+      #ollmcp-panel {
+        background: #111827;
+        border-radius: 16px;
+        border: 1px solid #1f2937;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 460px;
+      }
+      #ollmcp-panel h2 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+      .state {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        letter-spacing: 0.08em;
+      }
+      .state.running { color: #4ade80; }
+      .state.starting { color: #facc15; }
+      .state.stopped { color: #f472b6; }
+      .meta {
+        font-size: 0.9rem;
+        color: #cbd5f5;
+      }
+      pre.logs {
+        background: #0b1120;
+        border-radius: 12px;
+        padding: 16px;
+        flex: 1;
+        min-height: 260px;
+        max-height: 320px;
+        overflow-y: auto;
+        font-size: 0.86rem;
+        line-height: 1.5;
+        box-sizing: border-box;
+      }
+      .card-footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .input-form {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .input-form input {
+        flex: 1;
+        border: 1px solid #1f2937;
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: #0b1120;
+        color: #e2e8f0;
+        font-size: 0.95rem;
+      }
+      .input-form button {
+        border-radius: 999px;
+        padding: 10px 18px;
+      }
+      .input-hint {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin-top: 4px;
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.9rem;
+        color: #cbd5f5;
+      }
+      .toggle-row input {
+        accent-color: #3b82f6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ollmcp CLI</h1>
+      <p style="margin: 0 0 16px; color: #94a3b8;">Dedicated console for the optional Ollama MCP client.</p>
+      <div class="actions">
+        <button id="back" class="secondary">Back to overview</button>
+        <button id="refresh" class="secondary">Refresh</button>
+        <button type="button" id="terminal-commands">Run in local terminal</button>
+      </div>
+      <div id="dependency-warning">Start both msfrpcd and the Metasploit MCP server to interact with ollmcp.</div>
+      <div class="toggle-row" style="margin-bottom: 16px;">
+        <input type="checkbox" id="auto-scroll" checked />
+        <label for="auto-scroll">Show latest output automatically</label>
+      </div>
+      <section id="terminal-command-panel" class="terminal-panel" aria-hidden="true">
+        <div class="terminal-panel__header">
+          <div>
+            <h2>Run in your local terminal</h2>
+            <p style="margin:4px 0 0; color:#94a3b8; font-size:0.9rem;">Execute these commands in separate shells to mimic the supervisor.</p>
+          </div>
+          <div class="terminal-panel__actions">
+            <button type="button" id="terminal-panel-copy" class="secondary">Copy commands</button>
+            <button type="button" id="terminal-panel-close" class="secondary">Hide</button>
+          </div>
+        </div>
+        <pre><code id="terminal-command-text"></code></pre>
+        <p style="margin:0; color:#94a3b8; font-size:0.9rem;">Update hosts, ports, or models if your config differs.</p>
+        <p id="terminal-panel-copy-feedback" class="copy-feedback" aria-live="polite"></p>
+      </section>
+      <section id="ollmcp-panel"></section>
+    </main>
+    <script>
+      const panel = document.getElementById('ollmcp-panel');
+      const refreshBtn = document.getElementById('refresh');
+      const backBtn = document.getElementById('back');
+      const terminalBtn = document.getElementById('terminal-commands');
+      const terminalPanel = document.getElementById('terminal-command-panel');
+      const terminalPanelClose = document.getElementById('terminal-panel-close');
+      const terminalPanelCopy = document.getElementById('terminal-panel-copy');
+      const terminalCopyFeedback = document.getElementById('terminal-panel-copy-feedback');
+      const terminalCommandCode = document.getElementById('terminal-command-text');
+      const dependencyWarning = document.getElementById('dependency-warning');
+      const autoScrollToggle = document.getElementById('auto-scroll');
+      const logScrollPositions = new Map();
+      const terminalCommandText = `msfrpcd -U msf -P changeme -a 127.0.0.1 -p 55553 -S\ncd /Users/jcacosta/Documents/msfmcp-ollama/MetasploitMCP\nuv run MetasploitMCP.py --transport http --host 127.0.0.1 --port 8085\nollmcp --model gpt-oss:20b --host http://127.0.0.1:11434 --mcp-server-url http://127.0.0.1:8085/sse`;
+      let autoScroll = true;
+      let pendingInput = '';
+      let inputHadFocus = false;
+      let suppressFocusLoss = false;
+      let refreshLocked = false;
+      let refreshQueued = false;
+      let logSelectionActive = false;
+      let currentLogsElement = null;
+      let copyFeedbackTimeout;
+      try {
+        const stored = localStorage.getItem('ollmcpAutoScroll');
+        if (stored !== null) {
+          autoScroll = stored === '1';
+        }
+        if (autoScrollToggle) {
+          autoScrollToggle.checked = autoScroll;
+        }
+      } catch {
+        autoScroll = true;
+      }
+
+      if (terminalCommandCode) {
+        terminalCommandCode.textContent = terminalCommandText;
+      }
+
+      const showTerminalPanel = () => {
+        if (!terminalPanel) {
+          window.alert(`Run each command separately:\n\n${terminalCommandText}`);
+          return;
+        }
+        terminalPanel.classList.add('visible');
+        terminalPanel.setAttribute('aria-hidden', 'false');
+      };
+
+      const hideTerminalPanel = () => {
+        if (!terminalPanel) return;
+        terminalPanel.classList.remove('visible');
+        terminalPanel.setAttribute('aria-hidden', 'true');
+      };
+
+      const showCopyFeedback = (message, isError = false) => {
+        if (!terminalCopyFeedback) return;
+        terminalCopyFeedback.textContent = message;
+        terminalCopyFeedback.classList.toggle('error', isError);
+        if (copyFeedbackTimeout) {
+          clearTimeout(copyFeedbackTimeout);
+        }
+        copyFeedbackTimeout = window.setTimeout(() => {
+          terminalCopyFeedback.textContent = '';
+          terminalCopyFeedback.classList.remove('error');
+        }, 3000);
+      };
+
+      const fallbackCopy = () => {
+        const textarea = document.createElement('textarea');
+        textarea.value = terminalCommandText;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const succeeded = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (!succeeded) {
+          throw new Error('Copy command was blocked');
+        }
+      };
+
+      const copyTerminalCommands = async () => {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(terminalCommandText);
+          } else {
+            fallbackCopy();
+          }
+          showCopyFeedback('Commands copied to clipboard.');
+        } catch (error) {
+          showCopyFeedback('Unable to copy commands.', true);
+          console.error(error);
+        }
+      };
+
+      const lockRefresh = () => {
+        refreshLocked = true;
+      };
+
+      const unlockRefresh = () => {
+        if (!refreshLocked) {
+          return;
+        }
+        refreshLocked = false;
+        if (refreshQueued) {
+          refreshQueued = false;
+          refresh();
+        }
+      };
+
+      const selectionWithinLogs = () => {
+        if (!currentLogsElement) {
+          return false;
+        }
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) {
+          return false;
+        }
+        const anchorInside = selection.anchorNode ? currentLogsElement.contains(selection.anchorNode) : false;
+        const focusInside = selection.focusNode ? currentLogsElement.contains(selection.focusNode) : false;
+        return anchorInside || focusInside;
+      };
+
+      document.addEventListener('selectionchange', () => {
+        if (!logSelectionActive) {
+          return;
+        }
+        if (!selectionWithinLogs()) {
+          logSelectionActive = false;
+          unlockRefresh();
+        }
+      });
+
+      document.addEventListener('pointerup', () => {
+        if (!logSelectionActive) {
+          return;
+        }
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) {
+          logSelectionActive = false;
+          unlockRefresh();
+        }
+      });
+
+      if (terminalBtn) {
+        terminalBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          showTerminalPanel();
+        });
+      }
+
+      if (terminalPanelClose) {
+        terminalPanelClose.addEventListener('click', (event) => {
+          event.preventDefault();
+          hideTerminalPanel();
+        });
+      }
+
+      if (terminalPanelCopy) {
+        terminalPanelCopy.addEventListener('click', async (event) => {
+          event.preventDefault();
+          await copyTerminalCommands();
+        });
+      }
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && terminalPanel && terminalPanel.classList.contains('visible')) {
+          hideTerminalPanel();
+        }
+      });
+
+      async function request(path, options = {}) {
+        const res = await fetch(path, { method: 'GET', ...options });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error ?? res.statusText);
+        }
+        return res.json();
+      }
+
+      function renderOllmcp(data) {
+        const svc = data.services.find((service) => service.id === 'ollmcp');
+        if (!svc) {
+          currentLogsElement = null;
+          panel.innerHTML = '<p>ollmcp service configuration not found.</p>';
+          return;
+        }
+
+        suppressFocusLoss = true;
+        panel.innerHTML = '';
+        currentLogsElement = null;
+        suppressFocusLoss = false;
+        const title = document.createElement('h2');
+        title.textContent = svc.label;
+        const desc = document.createElement('p');
+        desc.className = 'meta';
+        desc.textContent = svc.description;
+
+        const state = document.createElement('span');
+        state.className = `state ${svc.info.state}`;
+        state.textContent = svc.info.state;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `PID: ${svc.info.pid ?? '—'} | Auto-start: ${svc.autoStart ? 'yes' : 'no'}`;
+
+        const exitMeta = document.createElement('div');
+        exitMeta.className = 'meta';
+        exitMeta.textContent = `Last exit: ${svc.info.lastExit ? JSON.stringify(svc.info.lastExit) : 'n/a'}`;
+
+        const logs = document.createElement('pre');
+        logs.className = 'logs';
+        const fullLogs = svc.info.logs.join('\n');
+        logs.textContent = fullLogs || 'No output yet.';
+        currentLogsElement = logs;
+        logs.addEventListener('pointerdown', () => {
+          logSelectionActive = true;
+          lockRefresh();
+        });
+        logs.addEventListener('scroll', () => {
+          if (autoScroll) return;
+          logScrollPositions.set('ollmcp', {
+            left: logs.scrollLeft,
+            top: logs.scrollTop,
+          });
+        });
+        if (autoScroll) {
+          logScrollPositions.delete('ollmcp');
+          requestAnimationFrame(() => {
+            logs.scrollTop = logs.scrollHeight;
+          });
+        } else if (logScrollPositions.has('ollmcp')) {
+          const { left, top } = logScrollPositions.get('ollmcp');
+          requestAnimationFrame(() => {
+            logs.scrollLeft = left;
+            logs.scrollTop = top;
+          });
+        }
+
+        const footer = document.createElement('div');
+        footer.className = 'card-footer';
+        const startBtn = document.createElement('button');
+        startBtn.textContent = 'Start';
+        startBtn.dataset.action = 'start';
+        startBtn.disabled = svc.info.state === 'running' || svc.info.state === 'starting';
+        const stopBtn = document.createElement('button');
+        stopBtn.textContent = 'Stop';
+        stopBtn.dataset.action = 'stop';
+        stopBtn.className = 'secondary';
+        stopBtn.disabled = svc.info.state === 'stopped' || svc.info.state === 'stopping';
+        const clearBtn = document.createElement('button');
+        clearBtn.textContent = 'Clear Output';
+        clearBtn.dataset.action = 'clear-logs';
+        clearBtn.className = 'secondary';
+
+        [startBtn, stopBtn, clearBtn].forEach((btn) => footer.appendChild(btn));
+
+        const inputForm = document.createElement('form');
+        inputForm.className = 'input-form';
+        const inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.placeholder = 'Enter an ollmcp command...';
+        inputField.value = pendingInput;
+        const sendBtn = document.createElement('button');
+        sendBtn.type = 'submit';
+        sendBtn.textContent = 'Send';
+        sendBtn.className = 'secondary';
+        const isRunning = svc.info.state === 'running';
+        inputField.disabled = !isRunning;
+        sendBtn.disabled = !isRunning;
+        if (!isRunning) {
+          inputHadFocus = false;
+        }
+
+        inputForm.append(inputField, sendBtn);
+
+        inputField.addEventListener('input', () => {
+          pendingInput = inputField.value;
+        });
+
+        inputField.addEventListener('focus', () => {
+          inputHadFocus = true;
+        });
+
+        inputField.addEventListener('blur', () => {
+          if (suppressFocusLoss) return;
+          inputHadFocus = false;
+        });
+
+        if (inputHadFocus && isRunning) {
+          requestAnimationFrame(() => {
+            inputField.focus();
+            const cursor = inputField.value.length;
+            inputField.setSelectionRange(cursor, cursor);
+          });
+        }
+
+        const hint = document.createElement('p');
+        hint.className = 'input-hint';
+        hint.textContent = isRunning ? 'Type a command and press Enter to interact with the CLI.' : 'Start ollmcp to send commands.';
+
+        inputForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!isRunning) return;
+          const line = inputField.value.trim();
+          if (!line) return;
+          sendBtn.disabled = true;
+          hint.textContent = 'Sending...';
+          try {
+            await request('/api/service/ollmcp/input', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ line }),
+            });
+            inputField.value = '';
+            pendingInput = '';
+            hint.textContent = 'Command sent.';
+            await refresh();
+          } catch (error) {
+            hint.textContent = `Failed to send command: ${error.message}`;
+          } finally {
+            sendBtn.disabled = false;
+          }
+        });
+
+        panel.append(title, desc, state, meta, exitMeta, logs, footer, inputForm, hint);
+      }
+
+      function updateDependencyWarning(data) {
+        const msfrpcd = data.services.find((svc) => svc.id === 'msfrpcd');
+        const metasploit = data.services.find((svc) => svc.id === 'metasploit-mcp');
+        const ready = Boolean(msfrpcd && metasploit && msfrpcd.info.state === 'running' && metasploit.info.state === 'running');
+        dependencyWarning.classList.toggle('visible', !ready);
+      }
+
+      async function refresh() {
+        if (refreshLocked) {
+          refreshQueued = true;
+          return;
+        }
+        try {
+          const data = await request('/api/status');
+          renderOllmcp(data);
+          updateDependencyWarning(data);
+        } catch (error) {
+          panel.innerHTML = `<p style="color:#f87171;">Failed to load status: ${error.message}</p>`;
+        }
+      }
+
+      panel.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const action = target.dataset.action;
+        if (!action) return;
+        try {
+          await request(`/api/service/ollmcp/${action}`, { method: 'POST' });
+          if (action === 'clear-logs') {
+            logScrollPositions.delete('ollmcp');
+          }
+          await refresh();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      refreshBtn.addEventListener('click', refresh);
+      backBtn.addEventListener('click', () => {
+        window.location.href = '/';
+      });
+
+      if (autoScrollToggle) {
+        autoScrollToggle.addEventListener('change', () => {
+          autoScroll = autoScrollToggle.checked;
+          try {
+            localStorage.setItem('ollmcpAutoScroll', autoScroll ? '1' : '0');
+          } catch {
+            // ignore storage errors
+          }
+          if (autoScroll) {
+            logScrollPositions.delete('ollmcp');
+            const logs = panel.querySelector('pre.logs');
+            if (logs) {
+              logs.scrollTop = logs.scrollHeight;
+            }
+          }
+        });
+      }
+
+      setInterval(refresh, 4000);
+      refresh();
+    </script>
+  </body>
+</html>
